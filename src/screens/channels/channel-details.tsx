@@ -613,7 +613,7 @@ const ChannelDetailsScreen = ({ navigation, route }: any) => {
                     alignItems: 'center',
                   }}
                   onPress={() =>
-                    navigation.replace('UserDetails', {
+                    navigation.navigate('UserDetails', {
                       participant: item,
                       channel_id,
                     })
