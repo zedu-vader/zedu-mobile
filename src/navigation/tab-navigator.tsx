@@ -6,7 +6,7 @@ import { normalize } from '@/utils/normalize';
 import { navigationBarBottomPadding } from '@/utils/status-bar-inset';
 import HomeScreen from '@/screens/home';
 import ChannelHome from '@/screens/channels';
-import SettingsHome from '@/screens/settings';
+import MoreScreen from '@/screens/more';
 import { useDataContext } from '@/store/useDataContext';
 import { GetRequest } from '@/utils/requests';
 import { useFocusEffect } from '@react-navigation/native';
@@ -21,6 +21,7 @@ import { formatTabBadgeCount } from '@/utils';
 import { Channel } from '@/types/channel';
 import { Chat } from '@/types/chats';
 import { useTheme } from '@/theme/ThemeProvider';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const Tab = createBottomTabNavigator();
 
@@ -280,8 +281,15 @@ const TabNavigator = ({
             iconSource = require('@/assets/tabs/mentions.png');
           else if (route.name === 'Buzz')
             iconSource = require('@/assets/tabs/buzz.png');
-          else if (route.name === 'Settings')
-            iconSource = require('@/assets/tabs/settings.png');
+          else if (route.name === 'More') {
+            return (
+              <Ionicons
+                name="ellipsis-horizontal-circle-outline"
+                size={normalize(26)}
+                color={focused ? colors.primary : colors.textSecondary}
+              />
+            );
+          }
 
           const showTabBadge =
             (route.name === 'Chats' && showChatsTabBadge) ||
@@ -346,11 +354,15 @@ const TabNavigator = ({
         },
       }}
     >
-      <Tab.Screen name="Chats" component={HomeScreen} />
+      <Tab.Screen
+        name="Chats"
+        component={HomeScreen}
+        options={{ tabBarLabel: 'Chat' }}
+      />
       <Tab.Screen name="Channels" component={ChannelHome} />
       <Tab.Screen name="Threads" component={MentionsScreen} />
       <Tab.Screen name="Buzz" component={BuzzTabStack} />
-      <Tab.Screen name="Settings" component={SettingsHome} />
+      <Tab.Screen name="More" component={MoreScreen} />
     </Tab.Navigator>
   );
 };
