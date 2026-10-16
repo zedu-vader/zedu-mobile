@@ -1,6 +1,16 @@
 import React, { useCallback, useMemo } from 'react';
-import { Image, Platform, StyleSheet, View } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import {
+  Image,
+  ImageSourcePropType,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
+import {
+  BottomTabBarButtonProps,
+  createBottomTabNavigator,
+} from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { normalize } from '@/utils/normalize';
 import { navigationBarBottomPadding } from '@/utils/status-bar-inset';
@@ -21,8 +31,37 @@ import { formatTabBadgeCount } from '@/utils';
 import { Channel } from '@/types/channel';
 import { Chat } from '@/types/chats';
 import { useTheme } from '@/theme/ThemeProvider';
+import { fonts } from '@/theme/typography';
 
 const Tab = createBottomTabNavigator();
+
+// Phosphor icons from the Figma "Nav Tab (mobile)" spec:
+// Regular when inactive, Fill when active.
+const TAB_ICONS: Record<
+  string,
+  { inactive: ImageSourcePropType; active: ImageSourcePropType }
+> = {
+  Chats: {
+    inactive: require('@/assets/tabs/chats.png'),
+    active: require('@/assets/tabs/chats-active.png'),
+  },
+  Channels: {
+    inactive: require('@/assets/tabs/channels.png'),
+    active: require('@/assets/tabs/channels-active.png'),
+  },
+  Threads: {
+    inactive: require('@/assets/tabs/threads.png'),
+    active: require('@/assets/tabs/threads-active.png'),
+  },
+  Buzz: {
+    inactive: require('@/assets/tabs/buzz.png'),
+    active: require('@/assets/tabs/buzz-active.png'),
+  },
+  Settings: {
+    inactive: require('@/assets/tabs/settings.png'),
+    active: require('@/assets/tabs/settings-active.png'),
+  },
+};
 
 const getChannelUnreadCount = (channel: Channel): number => {
   if (channel.thread_count > 0) {
@@ -65,7 +104,6 @@ const TabNavigator = ({
       height:
         Platform.OS === 'ios' ? normalize(85) : normalize(70) + tabBarBottom,
       paddingBottom: tabBarBottom,
-      paddingTop: normalize(8),
     }),
     [colors, tabBarBottom],
   );
@@ -74,8 +112,35 @@ const TabNavigator = ({
     () =>
       StyleSheet.create({
         tabBarLabel: {
-          fontSize: normalize(12),
-          fontWeight: '500',
+          fontSize: normalize(11),
+          fontFamily: fonts.medium,
+        },
+        // Top padding lives on the item (not the bar) so the active
+        // indicator can sit flush against the bar's top border.
+        tabBarItem: {
+          paddingTop: normalize(8),
+        },
+        tabBarButton: {
+          flex: 1,
+        },
+        tabActiveIndicator: {
+          position: 'absolute',
+          top: 0,
+          alignSelf: 'center',
+          width: normalize(28),
+          height: 3,
+          borderRadius: 2,
+          backgroundColor: colors.primary,
+        },
+        tabIconActive: {
+          width: normalize(24),
+          height: normalize(24),
+          tintColor: colors.primary,
+        },
+        tabIconInactive: {
+          width: normalize(24),
+          height: normalize(24),
+          tintColor: colors.textSecondary,
         },
         tabIconWrap: {
           width: normalize(28),
@@ -91,26 +156,27 @@ const TabNavigator = ({
         },
         tabBadge: {
           position: 'absolute',
-          top: normalize(-4),
-          right: normalize(-10),
-          minWidth: normalize(18),
-          height: normalize(18),
-          borderRadius: normalize(9),
+          top: normalize(-9),
+          left: normalize(17),
+          minWidth: normalize(16),
+          height: normalize(16),
+          borderRadius: normalize(8),
+          borderWidth: 1.5,
+          borderColor: colors.tabBar,
           backgroundColor: colors.primary,
-          paddingHorizontal: normalize(4),
+          paddingHorizontal: normalize(2),
           paddingVertical: 0,
           alignItems: 'center',
           justifyContent: 'center',
         },
         tabBadgeWide: {
-          minWidth: normalize(32),
-          paddingHorizontal: normalize(5),
-          right: normalize(-16),
+          minWidth: normalize(28),
+          paddingHorizontal: normalize(3),
         },
         tabBadgeText: {
           color: colors.white,
           fontSize: normalize(10),
-          lineHeight: normalize(18),
+          lineHeight: normalize(13),
           textAlign: 'center',
           includeFontPadding: false,
           textAlignVertical: 'center',
@@ -256,6 +322,25 @@ const TabNavigator = ({
     }, [dispatch, state?.callback]),
   );
 
+  const renderTabBarButton = useCallback(
+    ({
+      children,
+      style,
+      ref: _ref,
+      href: _href,
+      pressColor: _pressColor,
+      pressOpacity: _pressOpacity,
+      hoverEffect: _hoverEffect,
+      ...rest
+    }: BottomTabBarButtonProps) => (
+      <Pressable {...rest} style={[tabStyles.tabBarButton, style]}>
+        {rest['aria-selected'] && <View style={tabStyles.tabActiveIndicator} />}
+        {children}
+      </Pressable>
+    ),
+    [tabStyles],
+  );
+
   return (
     <Tab.Navigator
       screenOptions={({ route }: any) => ({
@@ -264,24 +349,14 @@ const TabNavigator = ({
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: tabBarStyle,
         tabBarLabelStyle: tabStyles.tabBarLabel,
+        tabBarItemStyle: tabStyles.tabBarItem,
+        tabBarButton: renderTabBarButton,
         tabBarIcon: ({ focused }: any) => {
-          let iconSource;
-          const iconStyle = {
-            width: normalize(24),
-            height: normalize(24),
-            tintColor: focused ? colors.primary : colors.textSecondary,
-          };
-
-          if (route.name === 'Chats')
-            iconSource = require('@/assets/tabs/chats.png');
-          else if (route.name === 'Channels')
-            iconSource = require('@/assets/tabs/channels.png');
-          else if (route.name === 'Threads')
-            iconSource = require('@/assets/tabs/mentions.png');
-          else if (route.name === 'Buzz')
-            iconSource = require('@/assets/tabs/buzz.png');
-          else if (route.name === 'Settings')
-            iconSource = require('@/assets/tabs/settings.png');
+          const icons = TAB_ICONS[route.name];
+          const iconSource = focused ? icons?.active : icons?.inactive;
+          const iconStyle = focused
+            ? tabStyles.tabIconActive
+            : tabStyles.tabIconInactive;
 
           const showTabBadge =
             (route.name === 'Chats' && showChatsTabBadge) ||
