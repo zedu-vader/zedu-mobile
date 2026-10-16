@@ -534,6 +534,10 @@ export const useFileManagement = (navigation: FileManagementNavigation) => {
   const handleConfirmUpload = useCallback(async () => {
     if (!pendingUploadFiles.length) return;
 
+    // Remember which folder was open when the upload started, so the files
+    // end up there instead of in the root directory.
+    const targetFolder = openFolder;
+
     const { data, error: uploadError } = await uploadFiles(pendingUploadFiles);
     if (uploadError || !data) {
       dispatch({
@@ -546,13 +550,53 @@ export const useFileManagement = (navigation: FileManagementNavigation) => {
       return;
     }
 
+    let moveFailures = 0;
+    if (targetFolder) {
+      // The upload endpoint stores files in the root, so move each uploaded
+      // file into the folder the user is currently viewing.
+      const uploaded: Media[] = Array.isArray(data) ? data : [];
+      const results = await Promise.all(
+        uploaded
+          .filter(file => file?.id && file.folder_id !== targetFolder.id)
+          .map(file => moveFile(file.id, targetFolder.id)),
+      );
+      moveFailures = results.filter(result => result?.error).length;
+    }
+
     setUploadConfirmVisible(false);
     setPendingUploadFiles([]);
-    setActiveTab('files');
-    setOpenFolder(null);
+
+    if (targetFolder) {
+      // Stay inside the folder and show the new files there.
+      refreshFolderFiles();
+      refreshFolders();
+    } else {
+      setActiveTab('files');
+      setOpenFolder(null);
+      refreshRoot();
+    }
+
+    if (moveFailures > 0) {
+      dispatch({
+        type: ACTIONS.ERROR,
+        payload: `Uploaded, but ${moveFailures} file${
+          moveFailures > 1 ? 's' : ''
+        } could not be moved into "${targetFolder?.name}". Check the root files.`,
+      });
+      if (targetFolder) refreshRoot();
+      return;
+    }
+
     dispatch({ type: ACTIONS.SUCCESS, payload: 'Files uploaded successfully' });
-    refreshRoot();
-  }, [dispatch, pendingUploadFiles, refreshRoot, uploadFiles]);
+  }, [
+    dispatch,
+    openFolder,
+    pendingUploadFiles,
+    refreshFolderFiles,
+    refreshFolders,
+    refreshRoot,
+    uploadFiles,
+  ]);
 
   const handleNewFolder = useCallback(() => {
     setEditingFolder(null);
