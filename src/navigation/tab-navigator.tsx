@@ -353,7 +353,7 @@ const TabNavigator = ({
         tabBarItemStyle: tabStyles.tabBarItem,
         tabBarButton: renderTabBarButton,
         tabBarIcon: ({ focused }: any) => {
-                  const icons = TAB_ICONS[route.name];
+          const icons = TAB_ICONS[route.name];
           const iconSource = focused ? icons?.active : icons?.inactive;
           const iconStyle = focused
             ? tabStyles.tabIconActive
