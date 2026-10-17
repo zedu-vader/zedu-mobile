@@ -59,37 +59,4 @@ jobs:
         continue-on-error: true
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            node .github/scripts/pr-review/run.mjs \
-              --base "origin/${{ github.base_ref }}" \
-              --head HEAD \
-              --config .github/pr-review.config.json \
-              --output review-report.json
-          else
-            BEFORE="${{ github.event.before }}"
-            AFTER="${{ github.event.after }}"
-            if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-              BEFORE="HEAD~1"
-            fi
-            node .github/scripts/pr-review/run.mjs \
-              --base "$BEFORE" \
-              --head "$AFTER" \
-              --config .github/pr-review.config.json \
-              --output review-report.json
-          fi
-
-      # Upload instead of commenting: this job runs PR code, so fork PRs get a read-only token.
-      # pr-review-comment.yml posts the report with a trusted token once this run completes.
-      - name: Upload review report
-        if: always() && github.event_name == 'pull_request'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: pr-review-report
-          path: |
-            review-report.md
-            review-report.json
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Fail on review errors
-        if: steps.review.outcome == 'failure'
-        run: exit 1
+            node .github/scripts/pr-review/run.mjs
