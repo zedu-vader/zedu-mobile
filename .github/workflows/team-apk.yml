@@ -6,8 +6,8 @@ name: Team APK
 # installable release APK (arm64) as the `android-apk` artifact.
 # Mirrors zedu-ci's pr-build-react-native.yml Android job and its public .env template, against the
 # dev backend. GOOGLE_CLIENT_ID is a placeholder so the sign-in screen doesn't throw; Google sign-in,
-# push and calls don't work in these builds. The APK is "Zedu Test" (net.emerj.zedu.vadertest), so it
-# installs next to the Play Store app; each test build replaces the previous test build.
+# push and calls don't work in these builds. Each PR gets its own app, e.g. branch apk/pr-5 builds
+# "Zedu PR5" (net.emerj.zedu.pr5), so it installs next to the Play Store app and other PR builds.
 
 on:
   push:
@@ -57,16 +57,23 @@ jobs:
           GOOGLE_CLIENT_ID=placeholder.apps.googleusercontent.com
           EOF
 
-      # Own app ID and name, so the test build installs next to the Play Store app instead of
-      # trying (and failing) to upgrade it. google-services.json must list the same package.
-      - name: Make it a separate "Zedu Test" app
+      # Own app ID and name per PR (apk/pr-5 -> "Zedu PR5", net.emerj.zedu.pr5), so the build installs
+      # next to the Play Store app and other PR builds. google-services.json must list the same package.
+      - name: Make it a separate app for this PR
+        env:
+          BRANCH: ${{ github.ref_name }}
         run: |
-          sed -i 's/applicationId "net.emerj.zedu"/applicationId "net.emerj.zedu.vadertest"/' android/app/build.gradle
-          sed -i 's/"package_name": *"net.emerj.zedu"/"package_name": "net.emerj.zedu.vadertest"/' android/app/google-services.json
-          sed -i 's|<string name="app_name">Zedu</string>|<string name="app_name">Zedu Test</string>|' android/app/src/main/res/values/strings.xml
-          grep -q 'applicationId "net.emerj.zedu.vadertest"' android/app/build.gradle
-          grep -q '"package_name": "net.emerj.zedu.vadertest"' android/app/google-services.json
-          grep -q 'Zedu Test' android/app/src/main/res/values/strings.xml
+          tag="$(echo "${BRANCH#apk/}" | tr -cd 'a-zA-Z0-9' | tr 'A-Z' 'a-z')"
+          [[ "$tag" =~ ^[a-z] ]] || tag="b$tag"
+          app_id="net.emerj.zedu.$tag"
+          app_name="Zedu ${tag^^}"
+          echo "Building $app_name ($app_id)"
+          sed -i "s/applicationId \"net.emerj.zedu\"/applicationId \"$app_id\"/" android/app/build.gradle
+          sed -i "s/\"package_name\": *\"net.emerj.zedu\"/\"package_name\": \"$app_id\"/" android/app/google-services.json
+          sed -i "s|<string name=\"app_name\">Zedu</string>|<string name=\"app_name\">$app_name</string>|" android/app/src/main/res/values/strings.xml
+          grep -q "applicationId \"$app_id\"" android/app/build.gradle
+          grep -q "\"package_name\": \"$app_id\"" android/app/google-services.json
+          grep -q "$app_name" android/app/src/main/res/values/strings.xml
 
       - name: Assemble release APK
         working-directory: android
