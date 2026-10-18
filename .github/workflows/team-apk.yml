@@ -6,7 +6,8 @@ name: Team APK
 # installable release APK (arm64) as the `android-apk` artifact.
 # Mirrors zedu-ci's pr-build-react-native.yml Android job and its public .env template, against the
 # dev backend. GOOGLE_CLIENT_ID is a placeholder so the sign-in screen doesn't throw; Google sign-in,
-# push and calls don't work in these builds.
+# push and calls don't work in these builds. The APK is "Zedu Test" (net.emerj.zedu.vadertest), so it
+# installs next to the Play Store app; each test build replaces the previous test build.
 
 on:
   push:
@@ -55,6 +56,17 @@ jobs:
           ONESIGNAL_APP_ID=00000000-0000-0000-0000-000000000000
           GOOGLE_CLIENT_ID=placeholder.apps.googleusercontent.com
           EOF
+
+      # Own app ID and name, so the test build installs next to the Play Store app instead of
+      # trying (and failing) to upgrade it. google-services.json must list the same package.
+      - name: Make it a separate "Zedu Test" app
+        run: |
+          sed -i 's/applicationId "net.emerj.zedu"/applicationId "net.emerj.zedu.vadertest"/' android/app/build.gradle
+          sed -i 's/"package_name": *"net.emerj.zedu"/"package_name": "net.emerj.zedu.vadertest"/' android/app/google-services.json
+          sed -i 's|<string name="app_name">Zedu</string>|<string name="app_name">Zedu Test</string>|' android/app/src/main/res/values/strings.xml
+          grep -q 'applicationId "net.emerj.zedu.vadertest"' android/app/build.gradle
+          grep -q '"package_name": "net.emerj.zedu.vadertest"' android/app/google-services.json
+          grep -q 'Zedu Test' android/app/src/main/res/values/strings.xml
 
       - name: Assemble release APK
         working-directory: android
