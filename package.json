@@ -20,7 +20,7 @@
     "security:audit": "npm audit --audit-level high",
     "security:files": "bash .github/scripts/verify-changed-files.sh origin/main HEAD",
     "security:malware": "node .github/scripts/scan-malware.mjs",
-    "start": "react-native start --reset-cache",
+    "start": "node init && react-native start --reset-cache",
     "test": "jest"
   },
   "dependencies": {
