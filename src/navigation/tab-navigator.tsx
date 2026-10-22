@@ -116,13 +116,15 @@ const TabNavigator = ({
           fontSize: normalize(11),
           fontFamily: fonts.medium,
         },
-        // Top padding lives on the item (not the bar) so the active
-        // indicator can sit flush against the bar's top border.
-        tabBarItem: {
-          paddingTop: normalize(8),
-        },
         tabBarButton: {
           flex: 1,
+        },
+        // Top padding lives inside the button (not on the bar or item
+        // wrapper) so the button starts at the bar's top edge and the
+        // active indicator sits flush against the top border. 5 is the
+        // library's own tab padding, kept so the icon doesn't move.
+        tabBarButtonPadding: {
+          paddingTop: normalize(8) + 5,
         },
         tabActiveIndicator: {
           position: 'absolute',
@@ -334,7 +336,10 @@ const TabNavigator = ({
       hoverEffect: _hoverEffect,
       ...rest
     }: BottomTabBarButtonProps) => (
-      <Pressable {...rest} style={[tabStyles.tabBarButton, style]}>
+      <Pressable
+        {...rest}
+        style={[tabStyles.tabBarButton, style, tabStyles.tabBarButtonPadding]}
+      >
         {rest['aria-selected'] && <View style={tabStyles.tabActiveIndicator} />}
         {children}
       </Pressable>
@@ -350,7 +355,6 @@ const TabNavigator = ({
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: tabBarStyle,
         tabBarLabelStyle: tabStyles.tabBarLabel,
-        tabBarItemStyle: tabStyles.tabBarItem,
         tabBarButton: renderTabBarButton,
         tabBarIcon: ({ focused }: any) => {
           const icons = TAB_ICONS[route.name];
