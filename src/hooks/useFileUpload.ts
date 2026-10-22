@@ -9,7 +9,7 @@ export const useFileUpload = () => {
   const [uploadedMedias, setUploadedMedias] = useState<any[]>([]);
   const { dispatch } = useDataContext();
 
-  const uploadFiles = async (assets: any[]) => {
+  const uploadFiles = async (assets: any[], folderId?: string | null) => {
     dispatch({ type: ACTIONS.UPLOADING, payload: true });
     setIsUploading(true);
 
@@ -27,6 +27,9 @@ export const useFileUpload = () => {
         name: fileName,
       } as any);
     });
+
+    // Without a folder_id the backend saves the files in the root directory.
+    if (folderId) formData.append('folder_id', folderId);
 
     try {
       const response = await UploadRequest(`/files/upload-files`, formData);
